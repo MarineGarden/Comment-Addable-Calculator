@@ -4,15 +4,10 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Shape;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.PathIterator;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,6 +18,8 @@ import javax.swing.JFrame;
 
 public class CommentAddableCalculator extends JFrame {
 	private static final long serialVersionUID = 1L;
+	
+	private static final CommentAddableCalculator self = new CommentAddableCalculator();
 	
 	{
 		
@@ -55,6 +52,8 @@ public class CommentAddableCalculator extends JFrame {
 			drawMcolumnsNrows( g , ColorBlocks.SCREEN );
 			drawMcolumnsNrows( g , ColorBlocks.BUTTON );
 			
+			g.drawImage( new BezierCurveImage( insideCalculator() , insideCalculator() , insideCalculator() ) , 0 , 0 , null );
+			
 		}
 		
 		private void drawMcolumnsNrows( Graphics g , ColorBlocks c ) {
@@ -69,6 +68,27 @@ public class CommentAddableCalculator extends JFrame {
 						g.fillRoundRect( bs.x() + 64*x , bs.y() + 65*y , bs.width() , bs.height() , CORNER_SIZE , CORNER_SIZE );
 				
 			} catch (NoSuchFieldException | SecurityException e) { e.printStackTrace(); }
+			
+		}
+		
+		private Point insideCalculator() {
+			
+			return inside( self );
+			
+		}
+		private Point inside( Frame stage ) {
+			
+			return random( stage.getSize() );
+			
+		}
+		private Point random( Dimension area ) {
+			
+			return new Point( random( area.width ) , random( area.height ) );
+			
+		}
+		private int random( int max ) {
+			
+			return (int)( Math.random()*( max + 1 ) );
 			
 		}
 		
@@ -148,7 +168,7 @@ public class CommentAddableCalculator extends JFrame {
 		
 		private BezierCurveImage( Point start , Point mid , Point finish ) {
 			
-			super( new BezierCurveSize( start , mid , finish , BezierCurve.radius ).width , new BezierCurveSize( start , mid , finish , BezierCurve.radius ).height , BufferedImage.TYPE_INT_ARGB );
+			super( new BezierCurveSize( start , mid , finish , BezierCurve.RADIUS ).width , new BezierCurveSize( start , mid , finish , BezierCurve.RADIUS ).height , BufferedImage.TYPE_INT_ARGB );
 			BezierCurve curve = new BezierCurve( start , mid , finish );
 			for ( int x = 0 ; x < getWidth() ; x++ )
 				for ( int y = 0 ; y < getHeight() ; y++ )
@@ -158,7 +178,6 @@ public class CommentAddableCalculator extends JFrame {
 		}
 		
 	}
-	
 	private static class BezierCurve {
 		
 		private final Point start;
@@ -166,7 +185,7 @@ public class CommentAddableCalculator extends JFrame {
 		private final Point finish;
 		private final int width2X;
 		private final int height2X;
-		private static final double radius = 5;
+		private static final double RADIUS = 5;
 		
 		private BezierCurve( Point start , Point mid , Point finish ) {
 			
@@ -191,7 +210,7 @@ public class CommentAddableCalculator extends JFrame {
 				
 				Point2D.Double curvePoint = getLocation( curvePointToken/( (double)( isWider ? width2X : height2X ) ) );
 				
-				if ( Point.distance( (double)x , (double)y , curvePoint.x , curvePoint.y ) < radius )
+				if ( Point.distance( (double)x , (double)y , curvePoint.x , curvePoint.y ) < RADIUS )
 					return true;
 				
 			}
@@ -214,9 +233,9 @@ public class CommentAddableCalculator extends JFrame {
 		}
 		
 	}
-	
 	private static class BezierCurveSize extends Dimension {
-		
+		private static final long serialVersionUID = 1L;
+
 		private BezierCurveSize( Point start , Point mid , Point finish , double radius ) {
 			
 			int maxX = Math.max( Math.max( start.x , mid.x ) , finish.x );
@@ -227,198 +246,7 @@ public class CommentAddableCalculator extends JFrame {
 		}
 		
 	}
-	
-	public static class Hints extends JComponent {
-		private static final long serialVersionUID = 1L;
-		
-		{
-			
-			setSize( 260 , 369 );
-			
-		}
-		
-		@Override
-		public void paint( Graphics g ) {
-			super.paint( g );
-			Graphics2D g2d = (Graphics2D)g;
-			
-			drawCurves( g2d , Strokes.ONE );
-			
-		}
-		
-		private void drawCurves( Graphics2D g2d , Strokes s ) {
-			
-			try {
-				
-				g2d.setColor( new Color( s.getClass().getField( s.name() ).getAnnotation( RGB.class ).HEXcode() ) );
-				g2d.draw( getBounds() );
-				
-			} catch (NoSuchFieldException | SecurityException e) { e.printStackTrace(); }
-			
-		}
-		
-		public static class BezierCurve implements Shape {
 
-			private final Point start;
-			private final Point mid;
-			private final Point end;
-			private final int breadth;
-			
-			public BezierCurve( Point start , Point mid , Point end , int breadth ) {
-				
-				this.start = start;
-				this.mid = mid;
-				this.end = end;
-				this.breadth = breadth;
-				
-			}
-			
-			@Override
-			public Rectangle getBounds() {
-				
-				int x = Math.min( Math.min( start.x , mid.x ) , end.x );
-				int y = Math.min( Math.min( start.y , mid.y ) , end.y );
-				int maxX = Math.max( Math.max( start.x , mid.x ) , end.x );
-				int maxY = Math.max( Math.max( start.y , mid.y ) , end.y );
-				int width = maxX - x;
-				int height = maxY - y;				
-				return new Rectangle( x , y , width, height );
-
-			}
-
-			@Override
-			public Rectangle2D getBounds2D() {
-				
-				Rectangle bounds = getBounds();
-				return new Rectangle2D() {
-					
-					@Override
-					public boolean isEmpty() {
-						
-						if ( bounds.x == 0 && bounds.y == 0 && bounds.width == 0 && bounds.height == 0 )
-							return true;
-						return false;
-						
-					}
-					
-					@Override
-					public double getY() {
-
-						return bounds.y;
-						
-					}
-					
-					@Override
-					public double getX() {
-
-						return bounds.x;
-						
-					}
-					
-					@Override
-					public double getWidth() {
-
-						return bounds.width;
-						
-					}
-					
-					@Override
-					public double getHeight() {
-
-						return bounds.height;
-						
-					}
-					
-					@Override
-					public void setRect( double x , double y , double w , double h ) {
-
-						bounds.x += x;
-						bounds.y += y;
-						bounds.width += w;
-						bounds.height += h;
-						
-					}
-					
-					@Override
-					public int outcode( double x , double y ) {
-
-						return 0;
-						
-					}
-					
-					@Override
-					public Rectangle2D createUnion( Rectangle2D r ) {
-
-						
-						return null;
-						
-					}
-					
-					@Override
-					public Rectangle2D createIntersection(Rectangle2D r) {
-						// TODO Auto-generated method stub
-						return null;
-					}
-				};
-				
-			}
-
-			@Override
-			public boolean contains(double x, double y) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public boolean contains(Point2D p) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public boolean intersects(double x, double y, double w, double h) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public boolean intersects(Rectangle2D r) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public boolean contains(double x, double y, double w, double h) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public boolean contains(Rectangle2D r) {
-				// TODO Auto-generated method stub
-				return false;
-			}
-
-			@Override
-			public PathIterator getPathIterator(AffineTransform at) {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public PathIterator getPathIterator(AffineTransform at, double flatness) {
-				// TODO Auto-generated method stub
-				return null;
-			}
-			
-		}
-		
-	}
-
-	public static void main(String[] args) {
-
-		new CommentAddableCalculator();
-		
-	}
+	public static void main(String[] args) {}
 
 }
