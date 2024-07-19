@@ -130,7 +130,7 @@ public class CommentAddableCalculator extends JFrame {
 			super.mousePressed( event );
 			
 			if ( exit.includes( event ) )
-				if ( event.getClickCount() > 1 )
+				if ( event.getClickCount() > 0 )
 					System.exit( 0 );
 			
 		}
