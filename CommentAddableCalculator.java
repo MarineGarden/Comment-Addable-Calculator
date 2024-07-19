@@ -3,13 +3,14 @@ package gadget;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
-import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.lang.annotation.ElementType;
@@ -22,19 +23,22 @@ import javax.swing.JFrame;
 public class CommentAddableCalculator extends JFrame {
 	private static final long serialVersionUID = 1L;
 	
+	@SuppressWarnings("unused")
 	private static final CommentAddableCalculator self = new CommentAddableCalculator();
 	
 	{
 		
-		setTitle( "calculator" );
-		setDefaultCloseOperation( EXIT_ON_CLOSE );
-		setLayout( null );
-		setSize( 276 , 408 );
-		setVisible( true );
-		getContentPane().setBackground( Color.YELLOW );
 		add( new Hints() );
 		add( new Blocks() );
 		addMouseListener( new Touchable() );
+		Draggable.on( this );
+		
+		setDefaultCloseOperation( EXIT_ON_CLOSE );
+		setLayout( null );
+		setSize( 260 , 408 );
+		setUndecorated( true );
+		setBackground( new Color( 0 , 0 , 0 , 0 ) );
+		setVisible( true );
 		
 	}
 	
@@ -133,10 +137,11 @@ public class CommentAddableCalculator extends JFrame {
 		
 	}
 	private static class ExitButtonArea extends RectangleArea {
-		
+		private static final long serialVersionUID = 1L;
+
 		private ExitButtonArea() {
 			
-			super( 50 , 50 , 100 , 100 );
+			super( 50 , 50 , 30 , 30 );
 			
 		}
 		
@@ -168,6 +173,7 @@ public class CommentAddableCalculator extends JFrame {
 			
 		}
 		
+		@SuppressWarnings("unused")
 		public boolean includes( MouseEvent event ) {
 			
 			return false;
@@ -239,7 +245,7 @@ public class CommentAddableCalculator extends JFrame {
 	private enum Strokes {
 		
 		@RGB( HEXcode = 0xFF0000 )
-		@Curves( startsX = { 50 , 150 } , startsY = { 50 , 50 } , midsX = { 100 , 100 } , midsY = { 100 , 100 } , endsX = { 150 , 50 } , endsY = { 150 , 150 } )
+		@Curves( startsX = { 50 , 80 } , startsY = { 50 , 50 } , midsX = { 65 , 65 } , midsY = { 65 , 65 } , endsX = { 80 , 50 } , endsY = { 80 , 80 } )
 		EXIT,
 		
 		@RGB( HEXcode = 0x000000 )
@@ -247,6 +253,58 @@ public class CommentAddableCalculator extends JFrame {
 		
 		@RGB( HEXcode = 0x000000 )
 		TWO
+		
+	}
+	
+	private static class Draggable extends Point implements MouseMotionListener,Cloneable {
+		private static final long serialVersionUID = 1L;
+		
+		private static final Draggable self = new Draggable();
+		
+		public static void on( Component target ) {
+			
+			target.addMouseMotionListener( self );
+			
+		}
+		
+		public static class ComponentWrapper {
+			
+			private final Component c;
+			
+			public ComponentWrapper( Component c ) {
+				
+				this.c = c;
+				
+			}
+			
+			public Point shift( int x , int y ) {
+				
+				Point before = c.getLocation();
+				Point after = new Point( before.x + x , before.y + y );
+				c.setLocation( after );
+				return c.getLocationOnScreen();
+				
+			}
+			
+		}
+		
+		@Override
+		public void mouseMoved( MouseEvent event ) {
+			
+			setLocation( event.getLocationOnScreen() );
+			
+		}
+		
+		@Override
+		public void mouseDragged( MouseEvent event ) {
+			
+			Component target = (Component)event.getSource();
+			ComponentWrapper helper = new ComponentWrapper( target );
+			Point mouse = event.getLocationOnScreen();
+			helper.shift( x == 0 ? 0 : mouse.x - x , y == 0 ? 0 : mouse.y - y );
+			setLocation( event.getLocationOnScreen() );
+			
+		}
 		
 	}
 	
