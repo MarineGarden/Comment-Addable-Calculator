@@ -7,6 +7,8 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.lang.annotation.ElementType;
@@ -29,7 +31,9 @@ public class CommentAddableCalculator extends JFrame {
 		setSize( 276 , 408 );
 		setVisible( true );
 		getContentPane().setBackground( Color.YELLOW );
+		add( new Hints() );
 		add( new Blocks() );
+		addMouseListener( new Touchable() );
 		
 	}
 	
@@ -52,8 +56,6 @@ public class CommentAddableCalculator extends JFrame {
 			drawMcolumnsNrows( g , ColorBlocks.SCREEN );
 			drawMcolumnsNrows( g , ColorBlocks.BUTTON );
 			
-			g.drawImage( new BezierCurveImage( insideCalculator() , insideCalculator() , insideCalculator() ) , 0 , 0 , null );
-			
 		}
 		
 		private void drawMcolumnsNrows( Graphics g , ColorBlocks c ) {
@@ -71,26 +73,63 @@ public class CommentAddableCalculator extends JFrame {
 			
 		}
 		
-		private Point insideCalculator() {
+	}
+	
+	public static class Hints extends JComponent {
+		private static final long serialVersionUID = 1L;
+		
+		{
 			
-			return inside( self );
-			
-		}
-		private Point inside( Frame stage ) {
-			
-			return random( stage.getSize() );
-			
-		}
-		private Point random( Dimension area ) {
-			
-			return new Point( random( area.width ) , random( area.height ) );
+			setSize( 260 , 369 );
 			
 		}
-		private int random( int max ) {
+		
+		@Override
+		public void paint( Graphics g ) {
+			super.paint( g );
 			
-			return (int)( Math.random()*( max + 1 ) );
+			drawBezierCurve( g , Strokes.EXIT );
 			
 		}
+		
+		private void drawBezierCurve( Graphics g , Strokes s ) {
+			
+			try {
+				
+				Color color = new Color( s.getClass().getField( s.name() ).getAnnotation( RGB.class ).HEXcode() );
+				Curves c = s.getClass().getField( s.name() ).getAnnotation( Curves.class );
+				Point[] starts = new Point[ c.startsX().length ];
+				for ( int i = 0 ; i < starts.length ; i++ )
+					starts[ i ] = new Point( c.startsX()[ i ] , c.startsY()[ i ] );
+				Point[] mids = new Point[ c.midsX().length ];
+				for ( int i = 0 ; i < mids.length ; i++ )
+					mids[ i ] = new Point( c.midsX()[ i ] , c.midsY()[ i ] );
+				Point[] ends = new Point[ c.endsX().length ];
+				for ( int i = 0 ; i < ends.length; i++ )
+					ends[ i ] = new Point( c.endsX()[ i ] , c.endsY()[ i ] );
+				for ( int i = 0 ; i < starts.length ; i++ )
+					g.drawImage( new BezierCurveImage( starts[ i ] , mids[ i ] , ends[ i ] , color ) , 0 , 0 , null );
+				
+			} catch ( NoSuchFieldException | SecurityException e ) { e.printStackTrace(); }
+			
+		}
+		
+	}
+	
+	private static class Touchable extends MouseAdapter {
+
+		@Override
+		public void mousePressed( MouseEvent event ) {
+			super.mousePressed( event );
+			
+			
+			
+		}
+		
+	}
+	private static class EventArea extends Dimension {
+		
+		
 		
 	}
 	
@@ -156,6 +195,10 @@ public class CommentAddableCalculator extends JFrame {
 	
 	private enum Strokes {
 		
+		@RGB( HEXcode = 0xFF0000 )
+		@Curves( startsX = { 50 , 150 } , startsY = { 50 , 50 } , midsX = { 100 , 100 } , midsY = { 100 , 100 } , endsX = { 150 , 50 } , endsY = { 150 , 150 } )
+		EXIT,
+		
 		@RGB( HEXcode = 0x000000 )
 		ONE,
 		
@@ -166,14 +209,14 @@ public class CommentAddableCalculator extends JFrame {
 	
 	private static class BezierCurveImage extends BufferedImage {
 		
-		private BezierCurveImage( Point start , Point mid , Point finish ) {
+		private BezierCurveImage( Point start , Point mid , Point finish , Color color ) {
 			
 			super( new BezierCurveSize( start , mid , finish , BezierCurve.RADIUS ).width , new BezierCurveSize( start , mid , finish , BezierCurve.RADIUS ).height , BufferedImage.TYPE_INT_ARGB );
 			BezierCurve curve = new BezierCurve( start , mid , finish );
 			for ( int x = 0 ; x < getWidth() ; x++ )
 				for ( int y = 0 ; y < getHeight() ; y++ )
 					if ( curve.includes( x , y ) )
-						setRGB( x , y , Color.ORANGE.getRGB() );
+						setRGB( x , y , color.getRGB() );
 			
 		}
 		
