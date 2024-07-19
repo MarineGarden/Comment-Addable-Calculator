@@ -7,6 +7,7 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
@@ -37,7 +38,7 @@ public class CommentAddableCalculator extends JFrame {
 		
 	}
 	
-	public static class Blocks extends JComponent {
+	private static class Blocks extends JComponent {
 		private static final long serialVersionUID = 1L;
 
 		private static final int CORNER_SIZE = 10;
@@ -75,7 +76,7 @@ public class CommentAddableCalculator extends JFrame {
 		
 	}
 	
-	public static class Hints extends JComponent {
+	private static class Hints extends JComponent {
 		private static final long serialVersionUID = 1L;
 		
 		{
@@ -118,18 +119,60 @@ public class CommentAddableCalculator extends JFrame {
 	
 	private static class Touchable extends MouseAdapter {
 
+		private static final ExitButtonArea exit = new ExitButtonArea();
+		
 		@Override
 		public void mousePressed( MouseEvent event ) {
 			super.mousePressed( event );
 			
-			
+			if ( exit.includes( event ) )
+				if ( event.getClickCount() > 1 )
+					System.exit( 0 );
 			
 		}
 		
 	}
-	private static class EventArea extends Dimension {
+	private static class ExitButtonArea extends RectangleArea {
 		
+		private ExitButtonArea() {
+			
+			super( 50 , 50 , 100 , 100 );
+			
+		}
 		
+	}
+	private static class RectangleArea extends EventArea {
+		private static final long serialVersionUID = 1L;
+
+		private RectangleArea( int x , int y , int width , int height ) {
+			
+			super( x , y , width , height );
+			
+		}
+		
+		@Override
+		public boolean includes( MouseEvent event ) {
+			
+			Point p = event.getPoint();
+			return p.x >= x && p.x <= width + x && p.y >= y && p.y <= height + y;
+			
+		}
+		
+	}
+	private static class EventArea extends Rectangle {
+		private static final long serialVersionUID = 1L;
+
+		private EventArea( int x , int y , int width , int height ) {
+			
+			super( x , y , width , height );
+			
+		}
+		
+		public boolean includes( MouseEvent event ) {
+			
+			return false;
+			
+		}
 		
 	}
 	
