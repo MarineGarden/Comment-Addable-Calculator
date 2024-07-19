@@ -35,7 +35,7 @@ public class CommentAddableCalculator extends JFrame {
 		
 		setDefaultCloseOperation( EXIT_ON_CLOSE );
 		setLayout( null );
-		setSize( 260 , 408 );
+		setSize( 260 , 399 );
 		setUndecorated( true );
 		setBackground( new Color( 0 , 0 , 0 , 0 ) );
 		setVisible( true );
@@ -49,7 +49,7 @@ public class CommentAddableCalculator extends JFrame {
 		
 		{
 			
-			setSize( 260 , 369 );
+			setSize( 260 , 399 );
 			
 		}
 		
@@ -85,7 +85,7 @@ public class CommentAddableCalculator extends JFrame {
 		
 		{
 			
-			setSize( 260 , 369 );
+			setSize( 260 , 399 );
 			
 		}
 		
@@ -113,7 +113,7 @@ public class CommentAddableCalculator extends JFrame {
 				for ( int i = 0 ; i < ends.length; i++ )
 					ends[ i ] = new Point( c.endsX()[ i ] , c.endsY()[ i ] );
 				for ( int i = 0 ; i < starts.length ; i++ )
-					g.drawImage( new BezierCurveImage( starts[ i ] , mids[ i ] , ends[ i ] , color ) , 0 , 0 , null );
+					g.drawImage( new BezierCurveImage( starts[ i ] , mids[ i ] , ends[ i ] , color , 5 ) , 0 , 0 , null );
 				
 			} catch ( NoSuchFieldException | SecurityException e ) { e.printStackTrace(); }
 			
@@ -141,7 +141,7 @@ public class CommentAddableCalculator extends JFrame {
 
 		private ExitButtonArea() {
 			
-			super( 50 , 50 , 30 , 30 );
+			super( 215 , 15 , 30 , 30 );
 			
 		}
 		
@@ -226,17 +226,17 @@ public class CommentAddableCalculator extends JFrame {
 	private enum ColorBlocks {
 		
 		@RGB( HEXcode = 0xFFC0CB )
-		@Bounds( x = 0 , y = 0 , width = 260 , height = 369 )
+		@Bounds( x = 0 , y = 0 , width = 260 , height = 399 )
 		@Counts( columns = 1 , rows = 1 )
 		BACKGROUND,
 		
 		@RGB( HEXcode = 0x00FF00 )
-		@Bounds( x = 4 , y = 5 , width = 252 , height = 100 )
+		@Bounds( x = 4 , y = 5 , width = 252 , height = 130 )
 		@Counts( columns = 1 , rows = 1 )
 		SCREEN,
 		
 		@RGB( HEXcode = 0xFFA500 )
-		@Bounds( x = 4 , y = 109 , width = 60 , height = 60 )
+		@Bounds( x = 4 , y = 139 , width = 60 , height = 60 )
 		@Counts( columns = 4 , rows = 4 )
 		BUTTON;
 		
@@ -245,7 +245,7 @@ public class CommentAddableCalculator extends JFrame {
 	private enum Strokes {
 		
 		@RGB( HEXcode = 0xFF0000 )
-		@Curves( startsX = { 50 , 80 } , startsY = { 50 , 50 } , midsX = { 65 , 65 } , midsY = { 65 , 65 } , endsX = { 80 , 50 } , endsY = { 80 , 80 } )
+		@Curves( startsX = { 215 , 245 } , startsY = { 15 , 15 } , midsX = { 230 , 230 } , midsY = { 30 , 30 } , endsX = { 245 , 215 } , endsY = { 45 , 45 } )
 		EXIT,
 		
 		@RGB( HEXcode = 0x000000 )
@@ -310,10 +310,10 @@ public class CommentAddableCalculator extends JFrame {
 	
 	private static class BezierCurveImage extends BufferedImage {
 		
-		private BezierCurveImage( Point start , Point mid , Point finish , Color color ) {
+		private BezierCurveImage( Point start , Point mid , Point finish , Color color , int breadth ) {
 			
-			super( new BezierCurveSize( start , mid , finish , BezierCurve.RADIUS ).width , new BezierCurveSize( start , mid , finish , BezierCurve.RADIUS ).height , BufferedImage.TYPE_INT_ARGB );
-			BezierCurve curve = new BezierCurve( start , mid , finish );
+			super( new BezierCurveSize( start , mid , finish , breadth/2 ).width , new BezierCurveSize( start , mid , finish , breadth/2 ).height , BufferedImage.TYPE_INT_ARGB );
+			BezierCurve curve = new BezierCurve( start , mid , finish , breadth/2 );
 			for ( int x = 0 ; x < getWidth() ; x++ )
 				for ( int y = 0 ; y < getHeight() ; y++ )
 					if ( curve.includes( x , y ) )
@@ -329,10 +329,11 @@ public class CommentAddableCalculator extends JFrame {
 		private final Point finish;
 		private final int width2X;
 		private final int height2X;
-		private static final double RADIUS = 5;
+		private final int breadth;
 		
-		private BezierCurve( Point start , Point mid , Point finish ) {
+		private BezierCurve( Point start , Point mid , Point finish , int breadth ) {
 			
+			this.breadth = breadth;
 			this.start = start;
 			this.mid = mid;
 			this.finish = finish;
@@ -354,7 +355,7 @@ public class CommentAddableCalculator extends JFrame {
 				
 				Point2D.Double curvePoint = getLocation( curvePointToken/( (double)( isWider ? width2X : height2X ) ) );
 				
-				if ( Point.distance( (double)x , (double)y , curvePoint.x , curvePoint.y ) < RADIUS )
+				if ( Point.distance( (double)x , (double)y , curvePoint.x , curvePoint.y ) < breadth/2 )
 					return true;
 				
 			}
