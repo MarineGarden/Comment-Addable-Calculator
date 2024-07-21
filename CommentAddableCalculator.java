@@ -303,7 +303,7 @@ public class CommentAddableCalculator extends JFrame {
 	private enum SmoothStrokes {
 		
 		@RGB( HEXcode = 0x000000 )
-		@Curves( startsX = { 100 , 50 , 150 } , startsY = { 50 , 150 , 150 } , midsX = { 75 , 100 , 125 } , midsY = { 100 , 150 , 100 } , endsX = { 50 , 150 , 100 } , endsY = { 150 , 150 , 50 } )
+		@Curves( startsX = { 100 , 80 , 80 , 100 , 120 , 120 } , startsY = { 70 , 80 , 120 , 130 , 120 , 80 } , midsX = { 90 , 80 , 90 , 110 , 120 , 110 } , midsY = { 65 , 100 , 135 , 135 , 100 , 65 } , endsX = { 80 , 80 , 100 , 120 , 120 , 100 } , endsY = { 80 , 120 , 130 , 120 , 80 , 70 } )
 		ZERO
 		
 	}
