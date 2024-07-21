@@ -16,6 +16,8 @@ import java.awt.image.BufferedImage;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -94,6 +96,7 @@ public class CommentAddableCalculator extends JFrame {
 			super.paint( g );
 			
 			drawBezierCurve( g , Strokes.EXIT );
+			drawSmoothBezierCurve( g , SmoothStrokes.ZERO );
 			
 		}
 		
@@ -116,6 +119,47 @@ public class CommentAddableCalculator extends JFrame {
 					g.drawImage( new BezierCurveImage( starts[ i ] , mids[ i ] , ends[ i ] , color , 5 ) , 0 , 0 , null );
 				
 			} catch ( NoSuchFieldException | SecurityException e ) { e.printStackTrace(); }
+			
+		}
+		
+		private void drawSmoothBezierCurve( Graphics g , SmoothStrokes ss ) {
+			
+			try {
+				
+				Color color = new Color( ss.getClass().getField( ss.name() ).getAnnotation( RGB.class ).HEXcode() );
+				Curves c = ss.getClass().getField( ss.name() ).getAnnotation( Curves.class );
+				Point[] starts = new Point[ c.startsX().length ];
+				for ( int i = 0 ; i < starts.length ; i++ )
+					starts[ i ] = new Point( c.startsX()[ i ] , c.startsY()[ i ] );
+				Point[] mids = new Point[ c.midsX().length ];
+				for ( int i = 0 ; i < mids.length ; i++ )
+					mids[ i ] = new Point( c.midsX()[ i ] , c.midsY()[ i ] );
+				Point[] ends = new Point[ c.endsX().length ];
+				for ( int i = 0 ; i < ends.length; i++ )
+					ends[ i ] = new Point( c.endsX()[ i ] , c.endsY()[ i ] );
+				RatioLine[] lines = new RatioLine[ starts.length ];
+				for ( int i = 0 ; i < lines.length ; i++ )
+					lines[ i ] = new RatioLine( starts[ i ] , new Distance( starts[ i ] , ends[ i ] ) , new Distance( mids[ i ] , ends[ i ] ).length()/new Distance( starts[ i ] , mids[ i ] ).length() );
+				g.drawImage( new SmoothBezierCurveImage( color , 10 , lines ) , 0 , 0 , null );
+				
+			} catch ( NoSuchFieldException | SecurityException e ) { e.printStackTrace(); }
+			
+		}
+		
+		private static class Distance extends Dimension {
+			private static final long serialVersionUID = 1L;
+
+			private Distance( Point p1 , Point p2 ) {
+				
+				super( p2.x - p1.x , p2.y - p1.y );
+				
+			}
+			
+			private double length() {
+				
+				return Math.sqrt( (double)( width*width + height*height ) );
+				
+			}
 			
 		}
 		
@@ -256,6 +300,14 @@ public class CommentAddableCalculator extends JFrame {
 		
 	}
 	
+	private enum SmoothStrokes {
+		
+		@RGB( HEXcode = 0x000000 )
+		@Curves( startsX = { 100 , 50 , 150 } , startsY = { 50 , 150 , 150 } , midsX = { 75 , 100 , 125 } , midsY = { 100 , 150 , 100 } , endsX = { 50 , 150 , 100 } , endsY = { 150 , 150 , 50 } )
+		ZERO
+		
+	}
+	
 	private static class Draggable extends Point implements MouseMotionListener,Cloneable {
 		private static final long serialVersionUID = 1L;
 		
@@ -308,6 +360,327 @@ public class CommentAddableCalculator extends JFrame {
 		
 	}
 	
+	private static class Comparings {
+		
+		private static int max( Integer... values ) {
+			
+			Integer result = Integer.MIN_VALUE;
+			for ( Integer value : values )
+				if ( value > result )
+					result = value;
+			return result;
+			
+		}
+		
+	}
+	
+	private static class SmoothBezierCurveImage extends BufferedImage {
+		
+		private SmoothBezierCurveImage( Color color , int breadth , RatioLine... lines ) {
+			super( new SmoothBezierCurveSize( breadth/2 , lines ).width , new SmoothBezierCurveSize( breadth/2 , lines ).height , BufferedImage.TYPE_INT_ARGB );
+			
+			SmoothBezierCurve curve = new SmoothBezierCurve( breadth , lines );
+			for ( int x = 0 ; x < getWidth() ; x++ )
+				for ( int y = 0 ; y < getHeight() ; y++ )
+					if ( curve.includes( x , y ) )
+						setRGB( x , y , color.getRGB() );
+			
+		}
+		
+	}
+	private static class SmoothBezierCurve {
+		
+		private final BezierCurve[] curves;
+		
+		private SmoothBezierCurve( int breadth , RatioLine... lines ) {
+			
+			if ( lines.length > 1 ) {
+				
+				RatioLine first = lines[ 0 ];
+				RatioLine last = lines[ lines.length - 1 ];
+				if ( Points.equals( first.getLocation() , last.getEnd() ) )
+					curves = new BezierCurve[ lines.length ];
+				else
+					curves = new BezierCurve[ lines.length - 1 ];
+				
+				for ( int i = 0 ; i < curves.length - 1 ; i++ ) {
+					
+					Point start = lines[ i ].getMid();
+					Point mid = lines[ i ].getEnd();
+					Point end = lines[ i + 1 ].getMid();
+					curves[ i ] = new BezierCurve( start , mid , end , breadth );
+					
+				}
+				if ( curves.length == lines.length ) {
+					
+					Point start = lines[ lines.length - 1 ].getMid();
+					Point mid = lines[ lines.length - 1 ].getEnd();
+					Point end = lines[ 0 ].getMid();
+					curves[ curves.length - 1 ] = new BezierCurve( start , mid , end , breadth );
+					
+				}
+				
+			} else
+				curves = new BezierCurve[ 0 ];
+			
+		}
+		
+		private static class Points {
+			
+			private static boolean equals( Point p1 , Point p2 ) {
+				
+				return p1.toString().equals( p2.toString() );
+				
+			}
+			
+		}
+		
+		private boolean includes( int x , int y ) {
+			
+			for ( BezierCurve curve : curves )
+				if ( curve.includes( x , y ) )
+					return true;
+			return false;
+			
+		}
+		
+	}
+	private static class SmoothBezierCurveSize extends Dimension {
+		private static final long serialVersionUID = 1L;
+
+		private SmoothBezierCurveSize( int radius , RatioLine... lines ) {
+			
+			Integer[] startsX = new Integer[ lines.length ];
+			for ( int i = 0 ; i < startsX.length ; i++ )
+				startsX[ i ] = lines[ i ].getLocation().x;
+			
+			Integer[] midsX = new Integer[ lines.length ];
+			for ( int i = 0 ; i < midsX.length ; i++ )
+				midsX[ i ] = lines[ i ].getMid().x;
+			
+			Integer[] endsX = new Integer[ lines.length ];
+			for ( int i = 0 ; i < endsX.length ; i++ )
+				endsX[ i ] = lines[ i ].getEnd().x;
+			
+			Integer[] Xs = new Integer[ lines.length*3 ];
+			Xs = Arrays.copyOfRange( startsX , Xs , 0 , lines.length , 0 );
+			Xs = Arrays.copyOfRange( midsX , Xs , 0 , lines.length , lines.length );
+			Xs = Arrays.copyOfRange( endsX , Xs , 0 , lines.length , lines.length*2 );
+			width = Comparings.max( Xs ) + radius;
+			
+			Integer[] startsY = new Integer[ lines.length ];
+			for ( int i = 0 ; i < startsY.length ; i++ )
+				startsY[ i ] = lines[ i ].getLocation().y;
+			
+			Integer[] midsY = new Integer[ lines.length ];
+			for ( int i = 0 ; i < midsY.length ; i++ )
+				midsY[ i ] = lines[ i ].getMid().y;
+			
+			Integer[] endsY = new Integer[ lines.length ];
+			for ( int i = 0 ; i < endsY.length ; i++ )
+				endsY[ i ] = lines[ i ].getEnd().y;
+			
+			Integer[] Ys = new Integer[ lines.length*3 ];
+			Ys = Arrays.copyOfRange( startsY , Ys , 0 , lines.length , 0 );
+			Ys = Arrays.copyOfRange( midsY , Ys , 0 , lines.length , lines.length );
+			Ys = Arrays.copyOfRange( endsY , Ys , 0 , lines.length , lines.length*2 );
+			height = Comparings.max( Ys ) + radius;
+			
+		}
+		
+		private static class Arrays {
+			
+			@SuppressWarnings("unchecked")
+			private static <T> T[] copyOfRange( T[] filling , T[] original , int fillingFrom , int fillingTo , int originalFrom ) {
+				
+				if ( originalFrom < original.length ) {
+					
+					ArrayGadget<T> ag = new ArrayGadget<T>( original );
+					ag.split( originalFrom );
+					T[] fillingInNeed = extractFilling( filling , fillingFrom , fillingTo );
+					ag.setTarget( ag.getPartViaArray( ag.join( ag.getFirst() , fillingInNeed , ag.getLast() ) , 0 , ag.getTotalLength() + fillingInNeed.length ) );
+					ag.removeTargetElements( originalFrom + fillingInNeed.length , originalFrom + fillingInNeed.length > original.length ? original.length + fillingInNeed.length : originalFrom + fillingInNeed.length*2 );
+					return ag.getTarget();
+					
+				} else {
+					
+					T[] fillingInNeed = extractFilling( filling , fillingFrom , fillingTo );
+					T[] extendedFilling = append( fillingInNeed , originalFrom/fillingInNeed.length );
+					ArrayGadget<T> ag = new ArrayGadget<T>( extendedFilling );
+					ag.split( extendedFilling.length - fillingInNeed.length );
+					T[] mid = ag.getPartViaArray( ag.getFirst() , 0 , originalFrom - original.length );
+					for ( int i = 0 ; i < mid.length ; i++ )
+						mid[ i ] = null;
+					return ag.join( original , mid , ag.getLast() );
+					
+				}
+				
+			}
+			private static <T> T[] extractFilling( T[] filling , int fillingFrom , int fillingTo ) {
+				
+				ArrayGadget<T> ag = new ArrayGadget<T>( filling );
+				ag.split( fillingFrom );
+				ag.setTarget( ag.getLast() );
+				ag.split( fillingTo );
+				return ag.getFirst();
+				
+			}
+			private static <T> T[] append( T[] target , int repeats ) {
+				
+				List<T> l = java.util.Arrays.asList( target );
+				ArrayList<T> al = new ArrayList<T> ( l );
+				for ( int i = 1 ; i < repeats ; i++ )
+					al.addAll( l );
+				return al.toArray( target );
+				
+			}
+			
+		}
+		
+		private static class ArrayGadget<T> {
+			
+			private T[] target;
+			private T[] first;
+			private T[] last;
+			
+			private ArrayGadget( T[] target ) {
+				
+				this.target = target;
+				
+			}
+			
+			private void split( int index ) {
+				
+				first = getTargetList().subList( 0 , index ).toArray( java.util.Arrays.copyOfRange( target , 0 , 0 ) );
+				last = getTargetList().subList( index , target.length ).toArray( java.util.Arrays.copyOfRange( target , 0 , 0 ) );
+				
+			}
+			@SuppressWarnings("unchecked")
+			private T[] join( T[]... arrays ) {
+				
+				if ( arrays.length > 0 ) {
+					
+					ArrayList<T> l = new ArrayList<T> ( getEmptyList() );
+					for ( T[] array : arrays )
+						l.addAll( getList( array ) );
+					return l.toArray( java.util.Arrays.copyOfRange( target , 0 , 0 ) );
+					
+				} else
+					return getEmptyArray();
+				
+			}
+			private T[] getEmptyArray() {
+				
+				return getEmptyList().toArray( target );
+				
+			}
+			private List<T> getEmptyList() {
+				
+				return getTargetList().subList( 0 , 0 );
+				
+			}
+			private List<T> getTargetList() {
+				
+				return getList( target );
+				
+			}
+			private T[] getPartViaArray( T[] array , int from , int to ) {
+				
+				return getPartViaList( array , from , to ).toArray( java.util.Arrays.copyOfRange( array , 0, 0 ) );
+				
+			}
+			private List<T> getPartViaList( T[] array , int from , int to ) {
+				
+				return getList( array ).subList( from , to );
+				
+			}
+			private List<T> getList( T[] array ) {
+				
+				return java.util.Arrays.asList( array );
+				
+			}
+			
+			private T[] getFirst() {
+				
+				return first;
+				
+			}
+			private T[] getLast() {
+				
+				return last;
+				
+			}
+			private T[] getTarget() {
+				
+				return target;
+				
+			}
+			private void setTarget( T[] target ) {
+				
+				this.target = target;
+				
+			}
+			
+			private int getTotalLength() {
+				
+				return first.length + last.length;
+				
+			}
+			
+			@SuppressWarnings("unchecked")
+			private void removeTargetElements( int from , int to ) {
+				
+				T[] target =  this.target;
+				split( from );
+				T[] leftNeed = getFirst();
+				setTarget( target );
+				split( to );
+				T[] rightNeed = getLast();
+				T[] result = join( leftNeed , rightNeed );
+				setTarget( result );
+				
+			}
+			
+		}
+		
+	}
+	private static class RatioLine extends Rectangle {
+		private static final long serialVersionUID = 1L;
+		
+		private final double partBRatio;
+		
+		private RatioLine( Point start , Dimension length , double betweenZeroAndOne ) {
+			
+			super( start , length );
+			partBRatio = betweenZeroAndOne;
+			
+		}
+		
+		private Point getMid() {
+			
+			Dimension partA = calculatePartALength();
+			return new Point( x + partA.width , y + partA.height );
+			
+		}
+		private Dimension calculatePartALength() {
+			
+			double ratio = calculatePartARatio();
+			return new Dimension( (int)( width*ratio ) , (int)( height*ratio ) );
+			
+		}
+		private double calculatePartARatio() {
+			
+			return 1/( 1 + partBRatio );
+			
+		}
+		
+		private Point getEnd() {
+			
+			return new Point( x + width , y + height );
+			
+		}
+		
+	}
 	private static class BezierCurveImage extends BufferedImage {
 		
 		private BezierCurveImage( Point start , Point mid , Point finish , Color color , int breadth ) {
@@ -381,12 +754,12 @@ public class CommentAddableCalculator extends JFrame {
 	private static class BezierCurveSize extends Dimension {
 		private static final long serialVersionUID = 1L;
 
-		private BezierCurveSize( Point start , Point mid , Point finish , double radius ) {
+		private BezierCurveSize( Point start , Point mid , Point finish , int radius ) {
 			
 			int maxX = Math.max( Math.max( start.x , mid.x ) , finish.x );
-			width = (int)( maxX + radius );
+			width = maxX + radius;
 			int maxY = Math.max( Math.max( start.y , mid.y ) , finish.y );
-			height = (int)( maxY + radius );
+			height = maxY + radius;
 			
 		}
 		
